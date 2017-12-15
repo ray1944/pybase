@@ -1,4 +1,5 @@
 import json
+import os
 
 
 class Cmdsession():
@@ -10,7 +11,7 @@ class Cmdsession():
     sessfile = '.sessald'
     def __init__(self, curpath):
         jsonobj = None
-        self.fulpath = curpath + self.sessfile
+        self.fulpath = os.path.join(curpath, self.sessfile)
         with open(self.fulpath, "a+") as fobj:
             try:
                 jsonobj = json.load(fobj)
@@ -20,13 +21,13 @@ class Cmdsession():
         self.serverids = []
         if jsonobj is not None:
             try:
-                self.serverids  = jsonobj.serverids
+                self.serverids  = jsonobj['serverids'][:]
             except AttributeError:
                 print 'Json object has no serverids'
                 del self.serverids[:]
                 self.serverids = []
             try:
-                self.lastprtid = jsonobj.lasprtid
+                self.lastprtid = jsonobj['lastprtid']
             except:
                 print 'Json object has no serverids'
                 self.lastprtid = 1
