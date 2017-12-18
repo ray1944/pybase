@@ -27,20 +27,24 @@ class Cmdsession():
                 del self.serverids[:]
                 self.serverids = []
             try:
-                self.lastprtid = jsonobj['lastprtid']
+                self.lastchkoutprtid = jsonobj['lastchkoutprtid']
+                self.lastchkinprtid = jsonobj['lastchkinprtid']
             except:
                 print 'Json object has no serverids'
-                self.lastprtid = 1
+                self.lastchkoutprtid = 1
+                self.lastchkinprtid = 1
         else:
             del self.serverids[:]
             self.serverids = []
-            self.lastprtid = 1
+            self.lastchkoutprtid = 1
+            self.lastchkinprtid = 1
 
     def savesess(self):
         with open(self.fulpath, "w") as fobj:
             data = {}
             data['serverids'] = self.serverids
-            data['lastprtid'] = self.lastprtid
+            data['lastchkoutprtid'] = self.lastchkoutprtid
+            data['lastchkinprtid'] = self.lastchkinprtid
             json.dump(data, fobj)
 
     def __del__(self):
