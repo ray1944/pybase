@@ -17,7 +17,7 @@ targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
 servers = []
 
 
-def runcmd(cmd):
+def runcmd(cmd, consoleout = None):
     p_status = -1
     prtbuf = ''
     try:
@@ -44,6 +44,8 @@ def runcmd(cmd):
                         if m is not None:
                             if m.group(1) is not None:
                                 servers.append(m.group(1))
+                        if consoleout is not None:
+                            consoleout.append(prtbuf)
                         prtbuf = ''
                         sys.stdout.flush()
 
