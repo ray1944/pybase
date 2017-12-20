@@ -52,11 +52,13 @@ for num in range(cs.lastchkoutprtid + 1, pg.numFile + 1):
     if ret != 0:
         print 'ald checkout ' + filenm + ' failed.'
         #print consoleout[0]
+
         if (isCheckoutTwiceTime(consoleout)):
+            cs.lastchkoutprtid = num
+            cs.savesess()
             continue
         else:
-            cs.savesess()
-        break
+            break
     else:
         print 'checkout ' + filenm + ' done'
         cs.lastprtid = num
@@ -73,5 +75,6 @@ if cs.lastchkoutprtid == pg.numFile:
             break
         else:
             print 'checkin ' + filenm + ' done'
+            cs.lastchkinprtid = num
 
 exit(0)
