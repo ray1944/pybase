@@ -10,11 +10,22 @@ ignorelines = ('^\s+$', '.*Dumping objects.*', '.*normal block.*', '.*Data:.*', 
                '.*Free Blocks.*', '.*Normal Blocks.*', '.*CRT Blocks.*', '.*Ignore Blocks.*',
                '.*Client Blocks.*', '.*Largest number used:.*', '.*Total allocations:.*')
 svrslistpattern = '^\d+:\s+\w+\s+(\d+)\s+connected.*'
-cmdpath = 'c:\\workspace\\aldon\\src\\client_lme\\aldcs\\'
-ald = cmdpath + 'ald'
-initparm = 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
-targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
 servers = []
+ald = ''
+
+def init():
+    if sys.platform == 'win32':
+        cmdpath = 'c:\\workspace\\aldon\\src\\client_lme\\aldcs\\'
+        initparm = 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
+        targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
+    elif sys.platform == 'linux2':
+        cmdpath = '/opt/aldon/aldonlmc/current/bin/'
+        targetpath = '/home/cheng/l08-dev'
+        initparm = 'l13qua:GrpPin/AppLarge/rls\(000\)::\$1'
+    else:
+        print 'Unsupported OS ' + sys.platform + ' ' + os.name
+        exit (-1)
+    ald = cmdpath = 'ald'
 
 
 def runcmd(cmd, consoleout = None):
