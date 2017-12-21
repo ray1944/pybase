@@ -4,10 +4,14 @@ import os
 import cmdsession
 import re
 
-def isCheckoutTwiceTime(cmdout):
+def isCheckoutinTwiceTime(cmdout, ischeckout):
     ret = False
-    regstr = ('Checking out:.*', 'AFF1108.*')
+    regcheckoutstr = ('Checking out:.*', 'AFF1108.*')
+    regcheckinstr = ('Checking in:.*', 'AFF1015.*')
     conditions = []
+    regstr = regcheckoutstr
+    if not ischeckout:
+        regstr = regcheckinstr
 
     for idx in range(0, len(regstr)):
         conditions.append(False)
@@ -24,6 +28,8 @@ def isCheckoutTwiceTime(cmdout):
             return False
 
     return True
+
+
 
 curpath = os.getcwd()
 pg.chtodir()
@@ -44,37 +50,51 @@ cs.savesess()
 
 # ald add parts and check in
 partprefix = 'partnm-'
+consoleout = []
 for num in range(cs.lastchkoutprtid + 1, pg.numFile + 1):
     filenm = partprefix + str(num).zfill(5)
     cmd = pg.ald + ' checkout ' + filenm
-    consoleout = []
+
     ret = pg.runcmd(cmd, consoleout)
     if ret != 0:
         print 'ald checkout ' + filenm + ' failed.'
         #print consoleout[0]
 
-        if (isCheckoutTwiceTime(consoleout)):
+        if (isCheckoutinTwiceTime(consoleout, True)):
             cs.lastchkoutprtid = num
             cs.savesess()
             continue
         else:
-            break
+            cs.lasterrors = consoleout
+            cs.savesess()
+            exit -1
     else:
         print 'checkout ' + filenm + ' done'
-        cs.lastprtid = num
+        cs.lastchkoutprtid = num
+        cs.savesess()
 
 if cs.lastchkoutprtid == pg.numFile:
     # check in
     for num in range(cs.lastchkinprtid, pg.numFile + 1):
         filenm = partprefix + str(num).zfill(5)
         cmd = pg.ald + ' checkin ' + filenm
-        ret = pg.runcmd(cmd)
+        consoleout = []
+        ret = pg.runcmd(cmd, consoleout)
         if ret != 0:
             print 'ald checkin ' + filenm + ' failed. '
-            cs.savesess()
-            break
+
+            if (isCheckoutinTwiceTime(consoleout, False)):
+                cs.lastchkinprtid = num
+                cs.savesess()
+                continue
+            else:
+                cs.lasterrors = consoleout
+                cs.savesess()
+                exit(-1)
+
         else:
             print 'checkin ' + filenm + ' done'
             cs.lastchkinprtid = num
+            cs.savesess()
 
 exit(0)
