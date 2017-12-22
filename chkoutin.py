@@ -34,7 +34,7 @@ def isCheckoutinTwiceTime(cmdout, ischeckout):
 
 
 curpath = os.getcwd()
-# pg.chtodir()
+pg.chtodir()
 pg = CP()
 curpath1 = os.getcwd()
 # ald initialize

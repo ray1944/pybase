@@ -117,3 +117,11 @@ class CommandProcess():
             return None
         else:
             return self.servers[:]
+
+    def chtodir(self, path=''):
+        curpath = os.getcwd()
+        if len(path) == 0:
+            path = self.targetpath
+
+        # change to target path
+        os.chdir(path)
