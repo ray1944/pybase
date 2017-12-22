@@ -1,8 +1,10 @@
+
 '''running ald command to add 50000 parts into remote lme server'''
 import partgen as pg
 import os
 import cmdsession
 import re
+from CommandProcess import CommandProcess as CP
 
 def isCheckoutinTwiceTime(cmdout, ischeckout):
     ret = False
@@ -32,7 +34,8 @@ def isCheckoutinTwiceTime(cmdout, ischeckout):
 
 
 curpath = os.getcwd()
-pg.chtodir()
+# pg.chtodir()
+pg = CP()
 curpath1 = os.getcwd()
 # ald initialize
 pg.init()
@@ -55,7 +58,7 @@ for num in range(cs.lastchkoutprtid + 1, pg.numFile + 1):
     filenm = partprefix + str(num).zfill(5)
     cmd = pg.ald + ' checkout ' + filenm
 
-    ret = pg.runcmd(cmd, consoleout)
+    ret = pg.run(cmd, consoleout)
     if ret != 0:
         print 'ald checkout ' + filenm + ' failed.'
         #print consoleout[0]
@@ -79,7 +82,7 @@ if cs.lastchkoutprtid == pg.numFile:
         filenm = partprefix + str(num).zfill(5)
         cmd = pg.ald + ' checkin ' + filenm
         consoleout = []
-        ret = pg.runcmd(cmd, consoleout)
+        ret = pg.run(cmd, consoleout)
         if ret != 0:
             print 'ald checkin ' + filenm + ' failed. '
 
