@@ -18,22 +18,23 @@ class CommandProcess():
     svrslistpattern = '^\d+:\s+\w+\s+(\d+)\s+connected.*'
     servers = []
     ald = ''
+    initparm = ''
 
-    def __init__(self, ignstrings):
+    def __init__(self):
         self.processStatus = -1
         self.printBuffer = ''
         if sys.platform == 'win32':
-            cmdpath = 'c:\\workspace\\aldon\\src\\client_lme\\aldcs\\'
-            initparm = 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
-            targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
+            self.cmdpath = 'c:\\workspace\\aldon\\src\\client_lme\\aldcs\\'
+            self.initparm = 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
+            self.targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
         elif sys.platform == 'linux2':
-            cmdpath = '/opt/aldon/aldonlmc/current/bin/'
-            targetpath = '/home/cheng/l08-dev'
-            initparm = 'l13qua:GrpPin/AppLarge/rls\(000\)::\$1'
+            self.cmdpath = '/opt/aldon/aldonlmc/current/bin/'
+            self.targetpath = '/home/cheng/l08-dev'
+            self.initparm = 'l13qua:GrpPin/AppLarge/rls\(000\)::\$1'
         else:
             print 'Unsupported OS ' + sys.platform + ' ' + os.name
             exit(-1)
-        ald = cmdpath = 'ald'
+        self.ald = self.cmdpath + 'ald'
 
     def run(self, cmd, consoleout = None):
         p_status = -1
