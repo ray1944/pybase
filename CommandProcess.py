@@ -1,6 +1,8 @@
 import os
 from subprocess import Popen
 import subprocess as sbp
+import sys
+import re
 
 class CommandProcess():
 
@@ -8,14 +10,36 @@ class CommandProcess():
     printBuffer = ''
     cmdStr = ''
     ignoreStrings = []
+    numFile = 50000
+    fnmPrefix = 'partnm-'
+    ignorelines = ('^\s+$', '.*Dumping objects.*', '.*normal block.*', '.*Data:.*', '.*Object dump complete.*',
+                   '.*Free Blocks.*', '.*Normal Blocks.*', '.*CRT Blocks.*', '.*Ignore Blocks.*',
+                   '.*Client Blocks.*', '.*Largest number used:.*', '.*Total allocations:.*')
+    svrslistpattern = '^\d+:\s+\w+\s+(\d+)\s+connected.*'
+    servers = []
+    ald = ''
 
     def __init__(self, ignstrings):
         self.processStatus = -1
         self.printBuffer = ''
+        if sys.platform == 'win32':
+            cmdpath = 'c:\\workspace\\aldon\\src\\client_lme\\aldcs\\'
+            initparm = 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
+            targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
+        elif sys.platform == 'linux2':
+            cmdpath = '/opt/aldon/aldonlmc/current/bin/'
+            targetpath = '/home/cheng/l08-dev'
+            initparm = 'l13qua:GrpPin/AppLarge/rls\(000\)::\$1'
+        else:
+            print 'Unsupported OS ' + sys.platform + ' ' + os.name
+            exit(-1)
+        ald = cmdpath = 'ald'
 
-    def run(self):
+    def run(self, cmd, consoleout = None):
+        p_status = -1
+        prtbuf = ''
         try:
-            p = Popen(self.cmdStr, shell=True, stderr=sbp.STDOUT, stdout=sbp.PIPE)
+            p = Popen(cmd, shell=True, stderr=sbp.STDOUT, stdout=sbp.PIPE)
             while True:
                 out = p.stdout.read(1)
                 p_status = p.poll()
@@ -26,18 +50,20 @@ class CommandProcess():
 
                     if out == '\n':
                         # sys.stdout.write(prtbuf)
-                        for ignstr in ignorelines:
+                        for ignstr in self.ignorelines:
                             pattern = re.compile(ignstr)
                             if pattern.match(prtbuf) is not None:
                                 prtbuf = ''
                                 break
                         if len(prtbuf) > 0:
                             sys.stdout.write(prtbuf)
-                            pattern = re.compile(svrslistpattern)
+                            pattern = re.compile(self.svrslistpattern)
                             m = pattern.match(prtbuf)
                             if m is not None:
                                 if m.group(1) is not None:
-                                    servers.append(m.group(1))
+                                    self.servers.append(m.group(1))
+                            if consoleout is not None:
+                                consoleout.append(prtbuf)
                             prtbuf = ''
                             sys.stdout.flush()
 
@@ -51,3 +77,42 @@ class CommandProcess():
         #     print 'Command {} exit with errors'.format(cmd)
 
         return p_status
+
+    def init(self, repostr=''):
+        if len(repostr) == 0:
+            repostr = self.initparm
+        cmd = self.ald + ' initialize ' + repostr
+        ret = self.run(cmd)
+        if ret != 0:
+            print 'ald init failed'
+            exit(ret)
+        else:
+            print 'initialized successfully'
+
+    def signon(self, user='pcheng', password='nomoney@2018'):
+        cmd = self.ald + ' signon -p ' + password + ' ' + user
+        ret = self.run(cmd)
+        if ret != 0:
+            print 'signon failed'
+            exit(ret)
+        else:
+            print 'signon successfully'
+
+    def setdevpath(self):
+        cmd = self.ald + ' setdevpath '
+        ret = self.run(cmd)
+        if ret != 0:
+            print 'ald setdevpath failed'
+            exit(ret)
+        else:
+            print 'setdevpath successfully'
+
+    def getSvrID(self):
+        cmd = self.ald + ' listsvrs'
+        del self.servers[:]
+        ret = self.run(cmd)
+        if ret != 0:
+            print 'get server id failed'
+            return None
+        else:
+            return self.servers[:]
