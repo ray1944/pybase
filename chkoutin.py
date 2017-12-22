@@ -1,6 +1,5 @@
 
 '''running ald command to add 50000 parts into remote lme server'''
-import partgen as pg
 import os
 import cmdsession
 import re
@@ -34,8 +33,8 @@ def isCheckoutinTwiceTime(cmdout, ischeckout):
 
 
 curpath = os.getcwd()
-pg.chtodir()
 pg = CP()
+pg.chtodir()
 curpath1 = os.getcwd()
 # ald initialize
 pg.init()
@@ -54,16 +53,19 @@ cs.savesess()
 # ald add parts and check in
 partprefix = 'partnm-'
 consoleout = []
-for num in range(cs.lastchkoutprtid + 1, pg.numFile + 1):
-    filenm = partprefix + str(num).zfill(5)
-    cmd = pg.ald + ' checkout ' + filenm
+for num in range(cs.lastchkoutprtid + 1, pg.numFile):
+    filelist = []
+    filelistsize = (num + 10) < pg.numFile and num + 10 or pg.numFile
+    for idx in range(num, filelistsize):
+        filelist.append(partprefix + str(idx).zfill(5))
+    cmd = pg.ald + ' checkout ' + ' '.join(filelist)
 
     ret = pg.run(cmd, consoleout)
     if ret != 0:
-        print 'ald checkout ' + filenm + ' failed.'
+        print cmd + ' failed.'
         #print consoleout[0]
 
-        if (isCheckoutinTwiceTime(consoleout, True)):
+        if isCheckoutinTwiceTime(consoleout, True):
             cs.lastchkoutprtid = num
             cs.savesess()
             continue
@@ -72,7 +74,7 @@ for num in range(cs.lastchkoutprtid + 1, pg.numFile + 1):
             cs.savesess()
             exit -1
     else:
-        print 'checkout ' + filenm + ' done'
+        print 'checkout ' + ','.join(filelist) + ' done'
         cs.lastchkoutprtid = num
         cs.savesess()
 
