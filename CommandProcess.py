@@ -3,6 +3,7 @@ from subprocess import Popen
 import subprocess as sbp
 import sys
 import re
+import cmdsession
 
 class CommandProcess():
 
@@ -20,21 +21,35 @@ class CommandProcess():
     ald = ''
     initparm = ''
 
-    def __init__(self):
+    def __init__(self, svrname = 'l13ssl', grp = 'GrpPin', app = 'AppLarge', release = 'rls', ver = '000', pd = '1'):
+        self.setSvsParms(svrname, grp, app, release, ver, pd)
+
         self.processStatus = -1
         self.printBuffer = ''
+
+        #initial parameter is like 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
         if sys.platform == 'win32':
             self.cmdpath = 'c:\\workspace\\aldon\\src\\client_lme\\aldcs\\'
-            self.initparm = 'l13ssl:GrpPin/AppLarge/rls(000)::$1'
             self.targetpath = 'C:\\LMe000Daily\\GrpPin\\AppLarge\\rls(000)'
         elif sys.platform == 'linux2':
             self.cmdpath = '/opt/aldon/aldonlmc/current/bin/'
             self.targetpath = '/home/cheng/l08-dev'
-            self.initparm = 'l13qua:GrpPin/AppLarge/rls\(000\)::\$1'
+            self.svrname = 'l13qua'
         else:
             print 'Unsupported OS ' + sys.platform + ' ' + os.name
             exit(-1)
+        self.initparm = '{0}:{1}/{2}/{3}\({4}\)::\${5}'.format(
+		self.svrname, self.grp, self.app, self.release, self.ver, self.pd)
         self.ald = self.cmdpath + 'ald'
+        self.sess = cmdsession.Cmdsession(self.targetpath)
+
+    def setSvsParms(self, svrname = 'l13ssl', grp = 'GrpPin', app = 'AppLarge', release = 'rls', ver = '000', pd = '1'):
+        self.svrname = svrname
+        self.grp = grp
+        self.app = app
+        self.release = release
+        self.ver = ver
+        self.pd = pd
 
     def run(self, cmd, consoleout = None):
         p_status = -1
@@ -65,14 +80,19 @@ class CommandProcess():
                                     self.servers.append(m.group(1))
                             if consoleout is not None:
                                 consoleout.append(prtbuf)
+                                self.sess.log(prtbuf)
                             prtbuf = ''
                             sys.stdout.flush()
 
         except OSError:
-            print 'the command {} is not exists'.format(cmd)
+            logmsg = 'the command {} is not exists'.format(cmd)
+            print logmsg
+            self.sess.log(logmsg)
             return -1
         except ValueError:
-            print 'Invalid parameters'
+            logmsg= 'the command {} is not exists'.format(cmd)
+            print logmsg
+            self.sess.log(logmsg)
             return -2
         # except CalledProcessError:
         #     print 'Command {} exit with errors'.format(cmd)
@@ -85,43 +105,80 @@ class CommandProcess():
         cmd = self.ald + ' initialize ' + repostr
         ret = self.run(cmd)
         if ret != 0:
-            print 'ald init failed'
+            logmsg = 'ald init failed'
+            print logmsg
+            self.sess.log(logmsg)
             exit(ret)
         else:
-            print 'initialized successfully'
+            logmsg = 'initialized successfully'
+            print logmsg
+            self.sess.log(logmsg)
 
     def signon(self, user='pcheng', password='nomoney@2018'):
         cmd = self.ald + ' signon -p ' + password + ' ' + user
         ret = self.run(cmd)
         if ret != 0:
-            print 'signon failed'
+            logmsg = 'signon failed'
+            self.sess.log(logmsg)
+            print logmsg
             exit(ret)
         else:
-            print 'signon successfully'
+            logmsg = 'signon successfully'
+            print logmsg
+            self.sess.log(logmsg)
 
     def setdevpath(self):
         cmd = self.ald + ' setdevpath '
         ret = self.run(cmd)
         if ret != 0:
-            print 'ald setdevpath failed'
+            logmsg = 'ald setdefpath failed'
+            print logmsg
+            self.sess.log(logmsg)
             exit(ret)
         else:
-            print 'setdevpath successfully'
+            logmsg = 'setdevpath successfully'
+            print logmsg
+        self.sess.log(logmsg)
 
     def getSvrID(self):
         cmd = self.ald + ' listsvrs'
         del self.servers[:]
         ret = self.run(cmd)
         if ret != 0:
-            print 'get server id failed'
+            logmsg = 'get server id failed'
+            print logmsg
+            self.sess.log(logmsg)
             return None
         else:
+            self.sess.log('get server id: {0}'.format(','.join(self.servers)))
             return self.servers[:]
 
     def chtodir(self, path=''):
-        curpath = os.getcwd()
         if len(path) == 0:
             path = self.targetpath
 
         # change to target path
         os.chdir(path)
+
+    def addparts(self, start = 1, end = 50000):
+        if end is None:
+            end = self.numFile + 1
+
+        for num in range(start, end + 1):
+            filenm = self.fnmPrefix + str(num).zfill(5)
+            cmd = self.ald + ' add -i ' + filenm
+            ret = self.run(cmd)
+            if ret != 0:
+                logmsg = 'ald add {0} failed.'.format(filenm)
+                print logmsg
+                self.sess.log(logmsg)
+                self.sess.savesess()
+                break
+            else:
+                logmsg = 'adding {0} done'.format(filenm)
+                print logmsg
+                self.sess.log(logmsg)
+
+
+    def getSession(self):
+        return self.sess
