@@ -1,5 +1,6 @@
 import json
 import os
+import logging
 
 
 class Cmdsession():
@@ -9,10 +10,11 @@ class Cmdsession():
 
     '''
     sessfile = '.sessald'
+    lasterrors = []
     def __init__(self, curpath):
         jsonobj = None
-        self.fulpath = os.path.join(curpath, self.sessfile)
-        with open(self.fulpath, "a+") as fobj:
+        self.sesspath = os.path.join(curpath, self.sessfile)
+        with open(self.sesspath, "a+") as fobj:
             try:
                 jsonobj = json.load(fobj)
             except ValueError:
@@ -38,9 +40,14 @@ class Cmdsession():
             self.serverids = []
             self.lastchkoutprtid = 1
             self.lastchkinprtid = 1
+        logging.basicConfig(level=logging.DEBUG,
+            format='%(asctime)s %(filename)s[line:%(lineno)d]%(levelname)s %(message)s',
+            datefmt='%a, %d %b %Y %H:%M:%S',
+            filename='.sesslog',
+            filemode='w')
 
     def savesess(self):
-        with open(self.fulpath, "w") as fobj:
+        with open(self.sesspath, "w") as fobj:
             data = {}
             data['serverids'] = self.serverids
             data['lastchkoutprtid'] = self.lastchkoutprtid
@@ -49,4 +56,8 @@ class Cmdsession():
 
     def __del__(self):
         self.savesess()
+
+    def log(self, logmsg):
+        logging.info(logmsg)
+
 
