@@ -5,13 +5,39 @@ import sys
 import re
 import cmdsession
 
+NUMFILE = 50000
+
+def isCheckoutinTwiceTime(cmdout, ischeckout):
+    ret = False
+    regcheckoutstr = ('Checking out:.*', 'AFF1108.*')
+    regcheckinstr = ('Checking in:.*', 'AFF1015.*')
+    conditions = []
+    regstr = regcheckoutstr
+    if not ischeckout:
+        regstr = regcheckinstr
+
+    for idx in range(0, len(regstr)):
+        conditions.append(False)
+
+    for out in cmdout:
+        for idx in range(0, len(regstr)):
+            pattern = re.compile(regstr[idx])
+            m = pattern.match(out)
+            if m is not None:
+                conditions[idx] = True
+
+    for con in conditions:
+        if not con:
+            return False
+
+    return True
+
 class CommandProcess():
 
     processStatus = -1
     printBuffer = ''
     cmdStr = ''
     ignoreStrings = []
-    numFile = 50000
     fnmPrefix = 'partnm-'
     ignorelines = ('^\s+$', '.*Dumping objects.*', '.*normal block.*', '.*Data:.*', '.*Object dump complete.*',
                    '.*Free Blocks.*', '.*Normal Blocks.*', '.*CRT Blocks.*', '.*Ignore Blocks.*',
@@ -38,8 +64,12 @@ class CommandProcess():
         else:
             print 'Unsupported OS ' + sys.platform + ' ' + os.name
             exit(-1)
-        self.initparm = '{0}:{1}/{2}/{3}\({4}\)::\${5}'.format(
-		self.svrname, self.grp, self.app, self.release, self.ver, self.pd)
+        self.initparm = '{0}:{1}/{2}/{3}\({4}\)::\${5}'.format(self.svrname,
+                                                               self.grp,
+                                                               self.app,
+                                                               self.release,
+                                                               self.ver,
+                                                               self.pd)
         self.ald = self.cmdpath + 'ald'
         self.sess = cmdsession.Cmdsession(self.targetpath)
 
@@ -160,9 +190,9 @@ class CommandProcess():
         # change to target path
         os.chdir(path)
 
-    def addparts(self, start = 1, end = 50000):
+    def addparts(self, start = 1, end = NUMFILE):
         if end is None:
-            end = self.numFile + 1
+            end = NUMFILE + 1
 
         for num in range(start, end + 1):
             filenm = self.fnmPrefix + str(num).zfill(5)
@@ -182,3 +212,63 @@ class CommandProcess():
 
     def getSession(self):
         return self.sess
+
+    def chkout(self, start = 1, groupnum = 1):
+        start = start != -1 and start or self.sess.lastchkoutprtid
+        for num in range(start, NUMFILE + 1, groupnum):
+            filelist = []
+            filelistsize = (num + groupnum) < NUMFILE and num + groupnum or NUMFILE
+            for idx in range(num, filelistsize):
+                filelist.append(self.fnmPrefix + str(idx).zfill(5))
+            cmd = '{0} checkout {1}'.format(self.ald, ' '.join(filelist))
+            consoleout = []
+            ret = self.run(cmd, consoleout)
+            if ret != 0:
+                print cmd + ' failed.'
+                if isCheckoutinTwiceTime(consoleout, True):
+                    self.sess.lastchkoutprtid = num
+                    self.sess.savesess()
+                    continue
+                else:
+                    self.sess.lasterrors = consoleout
+                    self.savesess()
+                    msg = 'Checkout error: ' + '\n'.join(consoleout)
+                    self.sess.log(msg)
+                    raise Exception(msg)
+            else:
+                msg = 'checkout ' + ','.join(filelist) + ' done'
+                print msg
+                self.sess.log(msg)
+                self.sess.lastchkoutprtid = num + groupnum
+                self.sess.savesess()
+
+    def chkin(self, start = 1, groupnum = 1):
+        start = start != -1 and start or self.sess.lastchkinprtid
+        for num in range(start, NUMFILE + 1, groupnum):
+            filelist = []
+            filelistsize = (num + groupnum) < NUMFILE and num + groupnum or NUMFILE
+            for idx in range(num, filelistsize):
+                filelist.append(self.fnmPrefix + str(idx).zfill(5))
+            cmd = '{0} checkin {1}'.format(self.ald, ' '.join(filelist))
+            consoleout = []
+            ret = self.run(cmd, consoleout)
+            if ret != 0:
+                msg = 'ald checking in {0} failed.'.format(' '.join(filelist))
+                if (isCheckoutinTwiceTime(consoleout, False)):
+                    self.sess.lastchkinprtid = num
+                    self.sess.savesess()
+                    continue
+                else:
+                    self.sess.lasterrors = consoleout
+                    self.sess.savesess()
+                    print msg
+                    self.sess.log(msg)
+                    raise Exception(msg)
+
+            else:
+                msg = 'checking in {0} done.'.format(' '.join(filelist))
+                self.sess.lastchkinprtid = num + groupnum
+                self.sess.savesess()
+                print msg
+                self.sess.log(msg)
+

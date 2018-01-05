@@ -13,7 +13,8 @@ class Cmdsession():
     lasterrors = []
     def __init__(self, curpath):
         jsonobj = None
-        self.sesspath = os.path.join(curpath, self.sessfile)
+        self.workpath = curpath
+        self.sesspath = os.path.join(self.workpath, self.sessfile)
         with open(self.sesspath, "a+") as fobj:
             try:
                 jsonobj = json.load(fobj)
@@ -43,7 +44,7 @@ class Cmdsession():
         logging.basicConfig(level=logging.DEBUG,
             format='%(asctime)s %(filename)s[line:%(lineno)d]%(levelname)s %(message)s',
             datefmt='%a, %d %b %Y %H:%M:%S',
-            filename='.sesslog',
+            filename=os.path.join(self.workpath, '.sesslog'),
             filemode='w')
 
     def savesess(self):
