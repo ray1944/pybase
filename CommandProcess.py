@@ -272,3 +272,7 @@ class CommandProcess():
                 print msg
                 self.sess.log(msg)
 
+    def resetSession(self):
+        self.sess.lastchkinprtid = 0
+        self.sess.lastchkoutprtid = 0
+        self.sess.savesess()

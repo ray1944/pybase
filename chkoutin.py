@@ -2,7 +2,6 @@
 '''running ald command to add 50000 parts into remote lme server'''
 import os
 import cmdsession
-import re
 from CommandProcess import CommandProcess as CP
 
 curpath = os.getcwd()
@@ -28,6 +27,7 @@ for idx in range(1, 100):
     pg.sess.log('{0} time(s) check in/out begins'.format(idx))
     pg.chkout(-1, 10)
     pg.chkin(-1, 10)
+    pg.resetSession()
     pg.sess.log('{0} time(s) check in/out ends'.format(idx))
 
 
